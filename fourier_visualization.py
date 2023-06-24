@@ -34,7 +34,7 @@ def prepare_image(img):
 	coords= (re:=gx[edges_bool]) + 1j * (im:=-gy[edges_bool])
 
 	# shift image to centre
-	coords -= np.average(re) + 1j * np.average(im)
+	coords -= np.average(coords)
 
 
 	# arrange points based on total ordering since simple graph assumed 
@@ -47,9 +47,12 @@ def prepare_image(img):
 		ind = np.argmin(
 				d:=np.abs(p - coords)
 			)
-		if d[ind] > 2 and main_curve_only:
+		if d[ind] > 10 and main_curve_only:
 			# jumped to different curve
 			cycles.append(coords_ordered)
+			# print(d[ind])
+			# plt.plot(np.real(coords_ordered), np.imag(coords_ordered))
+			# plt.show()
 			coords_ordered = []
 
 		p = coords[ind]
@@ -66,14 +69,13 @@ def prepare_image(img):
 		cycles[i] = np.asarray(cycle[0::skip_factor])
 
 	ind = np.argmax(map(len, cycles))
-
 	return cycles[ind]
 
 coords = prepare_image(img)
 N = len(coords)
 
-# plt.plot(np.real(coords), np.imag(coords))
-# plt.show()
+plt.plot(np.real(coords), np.imag(coords), '.')
+plt.show()
 
 # treat points as complex function and find contained frequencies
 f = np.fft.fftshift(np.fft.fftfreq(N)) 
@@ -93,7 +95,7 @@ rn_single = np.abs(xn)
 
 fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
 ax.axis('off')
-ax.set_ylim([np.pi*2,np.max(np.abs(coords))*1.1])
+ax.set_rlim([0,np.max(np.abs(coords))*1.05])
 
 p_bar = tqdm(range(frames:=N*2))
 
@@ -109,14 +111,16 @@ class update_cls:
 		self.epicycles.append(s)
 
 	def __call__(self,n):
-		global s
 		# update progress bar
 		p_bar.n = n
 		p_bar.refresh()
 
 		# draw nth point
 		if n < N:
-			ax.plot(np.angle(x_sum[n-1:n+1]), np.abs(x_sum[n-1:n+1]), 'w')
+			if main_curve_only:
+				ax.plot(np.angle(x_sum[n-1:n+1]), np.abs(x_sum[n-1:n+1]), 'w')
+			else:
+				ax.plot(np.angle(x_sum[n]), np.abs(x_sum[n]), 'w.')
 
 		n %= N
 		p = pn[n]
@@ -128,6 +132,8 @@ class update_cls:
 			self.epicycles = []
 
 		theta, r = thetan[n], rn[n]
+		# import time
+		# time.sleep(1)
 		self.epicyle_radii = ax.plot(theta, r, 'w')
 
 		# draw epicycle circles
