@@ -10,7 +10,7 @@ from tqdm import tqdm
 plt.style.use('dark_background')
 
 
-def prepare_image(img, N_desired=100):
+def prepare_image(img, N_desired=300):
 	img_gray = np.average(
 			cv2.imread(img)
 		,axis=-1)
@@ -35,67 +35,101 @@ def prepare_image(img, N_desired=100):
 
 	# arrange points based on total ordering since simple graph assumed 
 	# doesn't include initial point to ensure periodic boundary conditions
+	cycles = []
 	coords_ordered = []
 	p = coords[0]
 	for _ in range(N:=len(coords)):
 		coords_ordered.append(p)
 		ind = np.argmin(
-				np.abs(p - coords)
+				d:=np.abs(p - coords)
 			)
+		print(d[ind])
+		if d[ind] > 1.5:
+			# jumped to different curve
+			cycles.append(coords_ordered)
+			coords_ordered = []
+
 		p = coords[ind]
 		coords[ind] = np.inf
+	cycles.append(coords_ordered)
 
 	if N_desired is None:
 		N_desired = N
-	print(N)
+
 	skip_factor = np.max([int(N / N_desired),1])
-	return coords_ordered[0::skip_factor]
+	for i,cycle in enumerate(cycles):
+		cycles[i] = cycle[0::skip_factor]
+
+	for cycle in cycles:
+		plt.plot(np.real(cycle), np.imag(cycle))
+		plt.show()
 
 
-coords = prepare_image(sys.argv[1], int(sys.argv[2]))
-N = len(coords)
-
-# treat points as complex function and find contained frequencies
-f = np.fft.fftshift(np.fft.fftfreq(N))
-Xf = np.fft.fftshift(np.fft.fft(coords))
-
-xn = lambda n: np.exp(1j*2*np.pi*f*n)*Xf/N
-x = [xn(n) for n in range(N)]
-x_sum = [np.sum(xi) for xi in x]
-
-fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
-ax.axis('off')
-
-p_bar = tqdm(range(frames:=N*2))
-
-def draw_circle(c,r):
-	circle = Circle(c, r, transform=ax.transData._b, edgecolor='white', facecolor='none')
-	ax.add_artist(circle)
-	ax.set_aspect('equal')
-
-def update(n):
-	ax.clear()
-	ax.axis('off')
-	ax.set_ylim([np.pi*2,np.max(np.abs(coords))*1.5])
-
-	p_bar.n = n
-	p_bar.refresh()
-
-	m = np.min([n, N-1])
-	n %= N
-
-	p = np.cumsum(x[n])
-	p = np.insert(p, 0, 0+0j)
-	theta, r = np.angle(p), np.abs(p)
-	
-	for ri, pi in zip(np.abs(x[n]), p):
-		draw_circle([np.real(pi),np.imag(pi)], ri)
-	
-	ax.plot(theta, r)
-	ax.plot(np.angle(x_sum[:m+1]), np.abs(x_sum[:m+1]))
+	return cycles
 
 
-a = animation.FuncAnimation(fig, update, frames=frames, interval=1)
-# a.save('animation.gif', writer='imagemagick', fps=60)
+coords = prepare_image(sys.argv[1], int(sys.argv[2]) if sys.argv[2] != 'None' else None )
+# N = len(coords)
 
-plt.show()
+# # treat points as complex function and find contained frequencies
+# f = np.fft.fftshift(np.fft.fftfreq(N))
+# Xf = np.fft.fftshift(np.fft.fft(coords))
+
+# x = lambda n: np.exp(1j*2*np.pi*f*n)*Xf/N
+# xn = [x(n) for n in range(N)]
+# x_sum = [np.sum(xni) for xni in xn]
+# pn = [ np.insert(np.cumsum(xni), 0, 0+0j) for xni in xn]
+# thetan, rn = np.angle(pn), np.abs(pn)
+# rn_single = np.abs(xn)
+
+
+# fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+# ax.axis('off')
+# ax.set_ylim([np.pi*2,np.max(np.abs(coords))*1.1])
+
+# p_bar = tqdm(range(frames:=N*2))
+
+# class update_cls:
+# 	def __init__(self):
+# 		self.epicycles = []
+# 		self.epicyle_radii = None
+
+# 	def draw_circle(self,c,r):
+# 		circle = Circle(c, r, transform=ax.transData._b, edgecolor='white', facecolor='none')
+# 		s = ax.add_artist(circle)
+# 		ax.set_aspect('equal')
+# 		self.epicycles.append(s)
+
+# 	def __call__(self,n):
+# 		global s
+# 		# update progress bar
+# 		p_bar.n = n
+# 		p_bar.refresh()
+
+# 		# draw nth point
+# 		if n < N:
+# 			ax.plot(np.angle(x_sum[n-1:n+1]), np.abs(x_sum[n-1:n+1]), 'w')
+
+# 		n %= N
+# 		p = pn[n]
+
+# 		# remove previous epicycle drawings
+# 		if self.epicyle_radii is not None:
+# 			[epicycle.remove() for epicycle in self.epicycles]
+# 			[epicycle_radus.remove() for epicycle_radus in self.epicyle_radii]
+# 			self.epicycles = []
+
+# 		theta, r = thetan[n], rn[n]
+# 		self.epicyle_radii = ax.plot(theta, r, 'w')
+
+# 		# draw epicycle circles
+# 		for ri, pi in zip(rn_single[n], p):
+# 			self.draw_circle([np.real(pi),np.imag(pi)], ri)
+
+# update = update_cls()
+
+# anim = animation.FuncAnimation(fig, update, frames=frames, interval=1)
+# if sys.argv[3] == '1':
+# 	anim.save('animation.gif', writer='imagemagick', fps=60)
+
+# plt.show()
