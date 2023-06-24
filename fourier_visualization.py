@@ -10,10 +10,11 @@ from tqdm import tqdm
 plt.style.use('dark_background')
 
 img = sys.argv[1]
-N_desired = int(sys.argv[2]) if sys.argv[2] != 'None' else None
+frac_desired = float(sys.argv[2]) if sys.argv[2] != 'None' else None
 export_anim = True if sys.argv[3] == '1' else False
+main_curve_only = True if sys.argv[4] == '1' else False
 
-def prepare_image(img, N_desired=300):
+def prepare_image(img):
 	img_gray = np.average(
 			cv2.imread(img)
 		,axis=-1)
@@ -46,7 +47,7 @@ def prepare_image(img, N_desired=300):
 		ind = np.argmin(
 				d:=np.abs(p - coords)
 			)
-		if d[ind] > 2:
+		if d[ind] > 2 and main_curve_only:
 			# jumped to different curve
 			cycles.append(coords_ordered)
 			coords_ordered = []
@@ -55,8 +56,10 @@ def prepare_image(img, N_desired=300):
 		coords[ind] = np.inf
 	cycles.append(coords_ordered)
 
-	if N_desired is None:
+	if frac_desired is None:
 		N_desired = N
+	else:
+		N_desired = int(N * frac_desired)
 
 	skip_factor = np.max([int(N / N_desired),1])
 	for i,cycle in enumerate(cycles):
@@ -66,12 +69,20 @@ def prepare_image(img, N_desired=300):
 
 	return cycles[ind]
 
-coords = prepare_image(img, N_desired)
+coords = prepare_image(img)
 N = len(coords)
 
+# plt.plot(np.real(coords), np.imag(coords))
+# plt.show()
+
 # treat points as complex function and find contained frequencies
-f = np.fft.fftshift(np.fft.fftfreq(N))
+f = np.fft.fftshift(np.fft.fftfreq(N)) 
 Xf = np.fft.fftshift(np.fft.fft(coords))
+
+F = np.array([*f, *Xf]).reshape((2,len(f))).T
+F = sorted(F, key=lambda a: np.abs(a[0]))
+f, Xf = np.asarray(F).T
+f+=1 # +1 so that all frequencies are positive
 
 x = lambda n: np.exp(1j*2*np.pi*f*n)*Xf/N
 xn = [x(n) for n in range(N)]
@@ -79,7 +90,6 @@ x_sum = [np.sum(xni) for xni in xn]
 pn = [ np.insert(np.cumsum(xni), 0, 0+0j) for xni in xn]
 thetan, rn = np.angle(pn), np.abs(pn)
 rn_single = np.abs(xn)
-
 
 fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
 ax.axis('off')
