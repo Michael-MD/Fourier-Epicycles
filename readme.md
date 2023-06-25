@@ -28,7 +28,7 @@ Then run the following line which takes in four arguments
 ```
 python fourier_visualization path/to/img frac_points_used export_animation use_main_curve
 ```
-frac_points_used is a value between 0 and 1 and specifies the number of points to use for the final image, the more points the more detailed the the slower it becomes.
+frac_points_used is a value between 0 and 1 and specifies the number of points to use for the final image, the more points the more detailed the the slower it becomes. If the string None is passed, all points are used. 
 export_animation is a bool and is therefore either 0 or 1, 1 for export animation.
 use_main_curve produces an image using only the main curve found in the image, for more complicated images like the titanic, this should be set to 0.
 
