@@ -2,7 +2,11 @@ You can create your own compelx Fourier Series visualizations as shown here. You
 
 # 1. Examples
 
-![alt text](example animations/ssdsd.)
+![alt text](example animations/ball.gif)
+
+![alt text](example animations/pi.gif)
+
+![alt text](example animations/rose_and_jack.gif)
 
 # 2. Usage
 To use this script simple open terminal window, navigate to the root directory where the code is located. For example, 
