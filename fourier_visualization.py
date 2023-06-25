@@ -48,12 +48,9 @@ def prepare_image(img):
 		ind = np.argmin(
 				d:=np.abs(p - coords)
 			)
-		if d[ind] > 10 and main_curve_only:
+		if d[ind] > 10:
 			# jumped to different curve
 			cycles.append(coords_ordered)
-			# print(d[ind])
-			# plt.plot(np.real(coords_ordered), np.imag(coords_ordered))
-			# plt.show()
 			coords_ordered = []
 
 		p = coords[ind]
@@ -67,16 +64,26 @@ def prepare_image(img):
 
 	skip_factor = np.max([int(N / N_desired),1])
 	for i,cycle in enumerate(cycles):
-		cycles[i] = np.asarray(cycle[0::skip_factor])
+		cycles[i] = cycle[0::skip_factor]
 
-	ind = np.argmax(map(len, cycles))
-	return cycles[ind]
+	return cycles
 
-coords = prepare_image(img)
-N = len(coords)
+cycles = prepare_image(img)
 
-plt.plot(np.real(coords), np.imag(coords), 'w.',markersize=1)
+for cycle in cycles:
+	plt.plot(np.real(cycle), np.imag(cycle), 'w')
 plt.show()
+
+if main_curve_only:
+	ind = np.argmax(map(len, cycles))
+	coords = cycles[ind]
+else:
+	coords = []
+	for cycle in cycles:
+		for i in cycle:
+			coords.append(i)
+
+N = len(coords)
 
 # treat points as complex function and find contained frequencies
 f = np.fft.fftshift(np.fft.fftfreq(N)) 
@@ -121,10 +128,8 @@ class update_cls:
 
 		# draw nth point
 		if n < N:
-			if main_curve_only:
+			if np.abs(x_sum[n-1] - x_sum[n]) < 10:
 				ax.plot(np.angle(x_sum[n-1:n+1]), np.abs(x_sum[n-1:n+1]), 'w')
-			else:
-				ax.plot(np.angle(x_sum[n]), np.abs(x_sum[n]), 'w.', markersize=1)
 
 		n %= N
 		p = pn[n]
