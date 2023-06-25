@@ -13,6 +13,7 @@ img = sys.argv[1]
 frac_desired = float(sys.argv[2]) if sys.argv[2] != 'None' else None
 export_anim = True if sys.argv[3] == '1' else False
 main_curve_only = True if sys.argv[4] == '1' else False
+sort_by_amplitude = True if sys.argv[5] == '1' else False
 
 def prepare_image(img):
 	img_gray = np.average(
@@ -74,7 +75,7 @@ def prepare_image(img):
 coords = prepare_image(img)
 N = len(coords)
 
-plt.plot(np.real(coords), np.imag(coords), '.')
+plt.plot(np.real(coords), np.imag(coords), 'w.',markersize=1)
 plt.show()
 
 # treat points as complex function and find contained frequencies
@@ -82,7 +83,10 @@ f = np.fft.fftshift(np.fft.fftfreq(N))
 Xf = np.fft.fftshift(np.fft.fft(coords))
 
 F = np.array([*f, *Xf]).reshape((2,len(f))).T
-F = sorted(F, key=lambda a: np.abs(a[0]))
+if sort_by_amplitude:
+	F = sorted(F, key=lambda a: np.abs(a[1]),reverse=True) # sort by amplitude
+else:
+	F = sorted(F, key=lambda a: np.abs(a[0])) # sort by frequency
 f, Xf = np.asarray(F).T
 f+=1 # +1 so that all frequencies are positive
 
@@ -120,7 +124,7 @@ class update_cls:
 			if main_curve_only:
 				ax.plot(np.angle(x_sum[n-1:n+1]), np.abs(x_sum[n-1:n+1]), 'w')
 			else:
-				ax.plot(np.angle(x_sum[n]), np.abs(x_sum[n]), 'w.')
+				ax.plot(np.angle(x_sum[n]), np.abs(x_sum[n]), 'w.', markersize=1)
 
 		n %= N
 		p = pn[n]
