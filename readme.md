@@ -38,4 +38,4 @@ The rich theory of Fourier Analysis has become one of the most utilized fields b
 
 $$  f(n) =\frac{1}{N} \sum_{k=0}^{N-1} c_k \exp(j2\pi k n / N) $$
 
-where N is the period of the signal in samples. The coefficients $c_k$ encode the "strength" of each frequency in the signal. If we look at this expansion in the complex plane then these are simply phasors tip-to-tip which are the circles the circles you can see in the demonstration above.  The radius of each circle is given by $|c_k|$ and the phase for a given n is given by the complex exponential offset by the phase of $c_k$. The code uses positiive frequenecies only.
+where N is the period of the signal in samples. The coefficients $c_k$ encode the "strength" of each frequency in the signal. If we look at this expansion in the complex plane then these are simply phasors tip-to-tip which are the circles the circles you can see in the demonstration above.  The radius of each circle is given by $|c_k|$ and the phase for a given n is given by the complex exponential offset by the phase of $c_k$. 
