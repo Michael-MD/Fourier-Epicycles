@@ -26,7 +26,7 @@ cd /path/to/root/
 ``` 
 Then run the following line which takes in four arguments
 ```
-python fourier_visualization path/to/img frac_points_used export_animation use_main_curve sort_by_amplitude
+python fourier_visualization.py path/to/img frac_points_used export_animation use_main_curve sort_by_amplitude
 ```
 frac_points_used is a value between 0 and 1 and specifies the number of points to use for the final image, the more points the more detailed the the slower it becomes. If the string None is passed, all points are used. 
 export_animation is a bool and is therefore either 0 or 1, 1 for export animation.

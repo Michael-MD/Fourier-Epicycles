@@ -9,13 +9,34 @@ from tqdm import tqdm
 
 plt.style.use('dark_background')
 
-img = sys.argv[1]
-frac_desired = float(sys.argv[2]) if sys.argv[2] != 'None' else None
-export_anim = True if sys.argv[3] == '1' else False
-main_curve_only = True if sys.argv[4] == '1' else False
-sort_by_amplitude = True if sys.argv[5] == '1' else False
+"""
+Input arguements from command line
+	img (str): 
+		Path to image
+	frac_desired (int): 
+		A value between 0 and 1 inclusive which specifies the fraction of points to use which define
+		the outline. For instance .5 will exclude every second point.
+	export_anim (bool): 
+		specifies whether to export the animation as a gif file in the same directory
+	main_curve_only (bool):
+		When image detection is complete, the pixels are grouped into groups based on proximity. 
+		If the image is imply a silhouette then  one curve is specified, otherwise several may exist for more
+		complicated images. The user can choose whether to draw the longest curve only or all of them.
+	sort_by_amplitude (bool):
+		The user can choose whether to sort the epicycles by increasing amplitude or increasing frequency.
+"""
+
+
 
 def prepare_image(img):
+	"""
+	Performs edge detection and groups points into "cycles" based on proximity
+	Inputs:
+		img (str): img directory
+	Outputs:
+		cycles (list): list of lists, each list containing points from the edge detection and grouped based on 
+		proximity from one another.
+	"""
 	img_gray = np.average(
 			cv2.imread(img)
 		,axis=-1)
@@ -57,10 +78,7 @@ def prepare_image(img):
 		coords[ind] = np.inf
 	cycles.append(coords_ordered)
 
-	if frac_desired is None:
-		N_desired = N
-	else:
-		N_desired = int(N * frac_desired)
+	N_desired = int(N * frac_desired)
 
 	skip_factor = np.max([int(N / N_desired),1])
 	for i,cycle in enumerate(cycles):
@@ -68,49 +86,11 @@ def prepare_image(img):
 
 	return cycles
 
-cycles = prepare_image(img)
-
-for cycle in cycles:
-	plt.plot(np.real(cycle), np.imag(cycle), 'w')
-plt.show()
-
-if main_curve_only:
-	ind = np.argmax(map(len, cycles))
-	coords = cycles[ind]
-else:
-	coords = []
-	for cycle in cycles:
-		for i in cycle:
-			coords.append(i)
-
-N = len(coords)
-
-# treat points as complex function and find contained frequencies
-f = np.fft.fftshift(np.fft.fftfreq(N)) 
-Xf = np.fft.fftshift(np.fft.fft(coords))
-
-F = np.array([*f, *Xf]).reshape((2,len(f))).T
-if sort_by_amplitude:
-	F = sorted(F, key=lambda a: np.abs(a[1]),reverse=True) # sort by amplitude
-else:
-	F = sorted(F, key=lambda a: np.abs(a[0])) # sort by frequency
-f, Xf = np.asarray(F).T
-f+=1 # +1 so that all frequencies are positive
-
-x = lambda n: np.exp(1j*2*np.pi*f*n)*Xf/N
-xn = [x(n) for n in range(N)]
-x_sum = [np.sum(xni) for xni in xn]
-pn = [ np.insert(np.cumsum(xni), 0, 0+0j) for xni in xn]
-thetan, rn = np.angle(pn), np.abs(pn)
-rn_single = np.abs(xn)
-
-fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
-ax.axis('off')
-ax.set_rlim([0,np.max(np.abs(coords))*1.05])
-
-p_bar = tqdm(range(frames:=N*2))
 
 class update_cls:
+	"""
+	Keeps track of what is on the plot as well as updating.
+	"""
 	def __init__(self):
 		self.epicycles = []
 		self.epicyle_radii = None
@@ -149,10 +129,65 @@ class update_cls:
 		for ri, pi in zip(rn_single[n], p):
 			self.draw_circle([np.real(pi),np.imag(pi)], ri)
 
-update = update_cls()
 
-anim = animation.FuncAnimation(fig, update, frames=frames, interval=1)
-if export_anim:
-	anim.save('animation.gif', writer='imagemagick', fps=60)
+if __name__ == "__main__":
+	img = sys.argv[1]
+	frac_desired = float(sys.argv[2]) if sys.argv[2] != 'None' else None
+	export_anim = True if sys.argv[3] == '1' else False
+	main_curve_only = True if sys.argv[4] == '1' else False
+	sort_by_amplitude = True if sys.argv[5] == '1' else False
 
-plt.show()
+	cycles = prepare_image(img)
+
+	# plot all cycles for user to see
+	for cycle in cycles:
+		plt.plot(np.real(cycle), np.imag(cycle), 'w')
+	plt.show()
+
+	if main_curve_only:
+		# select longest curve
+		ind = np.argmax(map(len, cycles))
+		coords = cycles[ind]
+	else:
+		# make one long curve from all small curves in a single long list
+		coords = []
+		for cycle in cycles:
+			for i in cycle:
+				coords.append(i)
+
+	N = len(coords)
+
+	# treat points as complex function and find contained frequencies
+	f = np.fft.fftshift(np.fft.fftfreq(N)) 
+	Xf = np.fft.fftshift(np.fft.fft(coords))
+
+	F = np.array([*f, *Xf]).reshape((2,len(f))).T
+	if sort_by_amplitude:
+		F = sorted(F, key=lambda a: np.abs(a[1]),reverse=True) # sort by amplitude
+	else:
+		F = sorted(F, key=lambda a: np.abs(a[0])) # sort by frequency
+	f, Xf = np.asarray(F).T
+	f+=1 # +1 so that all frequencies are positive
+
+	# pre-calculations for speeding up animation 
+	x = lambda n: np.exp(1j*2*np.pi*f*n)*Xf/N
+	xn = [x(n) for n in range(N)]
+	x_sum = [np.sum(xni) for xni in xn]
+	pn = [ np.insert(np.cumsum(xni), 0, 0+0j) for xni in xn]
+	thetan, rn = np.angle(pn), np.abs(pn)
+	rn_single = np.abs(xn)
+
+	# create polar plot
+	fig, ax = plt.subplots(subplot_kw={'projection': 'polar'})
+	ax.axis('off')
+	ax.set_rlim([0,np.max(np.abs(coords))*1.05])
+
+	# create progress bar
+	p_bar = tqdm(range(frames:=N*2))
+	
+	update = update_cls()
+	anim = animation.FuncAnimation(fig, update, frames=frames, interval=1)
+	if export_anim:
+		anim.save('animation.gif', writer='imagemagick', fps=60)
+
+	plt.show()
