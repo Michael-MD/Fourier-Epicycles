@@ -3,7 +3,7 @@ You can create your own compelx Fourier Series visualizations as shown here. You
 # 1. Examples
 Here are some examples with the corresponding code to generate them.
 ```
-python fourier_visualization path/to/img .05 1 1 0
+python fourier_visualization.py path/to/img .05 1 1 0
 ```
 <img src="example_animations/ball.gif" width="600"/>
 
@@ -14,7 +14,7 @@ python fourier_visualization.py path/to/img .2 1 1 1
 <img src="example_animations/pi.gif" width="600"/>
 
 ```
-python fourier_visualization path/to/img .1 1 0 1
+python fourier_visualization.py path/to/img .1 1 0 1
 ```
 
 <img src="example_animations/rose_and_jack.gif" width="600"/>
